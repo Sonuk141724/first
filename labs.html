@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Labs &amp; Tests - Smart Healthcare</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #0f172a; background: #f8fafc; }
+    .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .nav { background: #0091b1; color: white; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .nav a { color: white; text-decoration: none; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .nav .brand { font-weight: 700; margin-right: 1rem; }
+    header.hero { background: linear-gradient(135deg, #0091b1 0%, #00637a 100%); color: white; padding: 2rem 1rem; text-align: center; }
+    .card { background: white; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { color: #0091b1; font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; background: #0091b1; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; border: none; cursor: pointer; font-size: 0.95rem; }
+    .grid { display: grid; gap: 1rem; }
+    @media (min-width: 640px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+    .hidden { display: none; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .input-wrap { position: relative; }
+    .autocomplete { position: absolute; left: 0; right: 0; top: 100%; background: #fff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 0.5rem 0.5rem; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .autocomplete li { padding: 0.5rem 0.75rem; cursor: pointer; list-style: none; font-size: 0.9rem; }
+    .autocomplete li:hover { background: #f0f9ff; color: #0091b1; }
+    .suggest-list { margin-top: 0.5rem; }
+    .suggest-list .test-item { display: inline-block; background: #f0f9ff; color: #0091b1; padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.875rem; margin: 0.25rem 0.25rem 0 0; }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+  <header class="hero"><h1>Labs &amp; Tests</h1><p>Home collection · Smart test suggestions</p></header>
+  <main class="container">
+    <div class="card">
+      <h2>Smart test suggestions</h2>
+      <p style="font-size:0.9rem;color:#64748b;margin-bottom:0.5rem">Type your symptom or condition — we suggest relevant tests.</p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-start">
+        <div class="input-wrap" style="flex:1;min-width:200px">
+          <input type="text" id="symptomInput" placeholder="e.g. fatigue, sugar, thyroid, fever" style="padding:0.5rem;border:1px solid #e2e8f0;border-radius:0.5rem" autocomplete="off" />
+          <ul id="symptomSuggest" class="autocomplete hidden"></ul>
+        </div>
+        <button type="button" class="btn" id="suggestBtn">Suggest tests</button>
+      </div>
+      <div id="suggestResult" class="mt-2 hidden suggest-list"></div>
+    </div>
+    <h2 class="mb-1">Labs</h2>
+    <div id="labList"></div>
+    <h2 class="mb-1 mt-2">Popular tests</h2>
+    <div id="testList" class="grid grid-3"></div>
+  </main>
+  <script>
+    var MOCK = {
+      labs: [
+        { id: '1', name: 'Thyrocare Collection Center', address: 'Sector 18, Noida', homeCollection: true, rating: 4.5 },
+        { id: '2', name: 'Dr. Lal PathLabs', address: 'Sector 50, Noida', homeCollection: true, rating: 4.3 },
+        { id: '3', name: 'SRL Diagnostics', address: 'Sector 62, Noida', homeCollection: true, rating: 4.4 },
+        { id: '4', name: 'Apollo Diagnostics', address: 'Sector 18, Noida', homeCollection: true, rating: 4.6 }
+      ],
+      tests: [
+        { id: '1', name: 'Complete Blood Count (CBC)', category: 'Blood', price: 299, keywords: 'blood,fever,fatigue,weakness,anemia' },
+        { id: '2', name: 'Thyroid Profile (T3, T4, TSH)', category: 'Hormone', price: 499, keywords: 'thyroid,fatigue,weight,gain,lose' },
+        { id: '3', name: 'HbA1c (Glycated Hemoglobin)', category: 'Diabetes', price: 399, keywords: 'sugar,diabetes,blood sugar' },
+        { id: '4', name: 'Fasting Blood Sugar', category: 'Diabetes', price: 149, keywords: 'sugar,diabetes,glucose' },
+        { id: '5', name: 'Lipid Profile', category: 'Cardiac', price: 449, keywords: 'cholesterol,heart,lipid' },
+        { id: '6', name: 'Liver Function Test (LFT)', category: 'Liver', price: 549, keywords: 'liver,jaundice,stomach,digestion' },
+        { id: '7', name: 'Kidney Function Test (KFT)', category: 'Kidney', price: 499, keywords: 'kidney,urine,creatinine' },
+        { id: '8', name: 'Vitamin D', category: 'Vitamin', price: 599, keywords: 'vitamin d,bone,fatigue,weakness' },
+        { id: '9', name: 'Vitamin B12', category: 'Vitamin', price: 549, keywords: 'vitamin b12,fatigue,weakness,anemia' },
+        { id: '10', name: 'Urine Routine', category: 'Urine', price: 199, keywords: 'urine,infection,uti' },
+        { id: '11', name: 'ECG', category: 'Cardiac', price: 299, keywords: 'heart,chest,palpitation' },
+        { id: '12', name: 'ESR / CRP', category: 'Inflammation', price: 249, keywords: 'inflammation,fever,joint' },
+        { id: '13', name: 'Hb (Hemoglobin)', category: 'Blood', price: 149, keywords: 'anemia,fatigue,blood' },
+        { id: '14', name: 'Dengue NS1 & IgG/IgM', category: 'Infection', price: 699, keywords: 'dengue,fever,platelet' },
+        { id: '15', name: 'Complete Urine Examination', category: 'Urine', price: 179, keywords: 'urine,kidney,infection' },
+        { id: '16', name: 'Iron Studies', category: 'Blood', price: 649, keywords: 'anemia,iron,fatigue' }
+      ],
+      symptomKeywords: ['fatigue', 'sugar', 'diabetes', 'thyroid', 'fever', 'blood', 'anemia', 'weakness', 'heart', 'cholesterol', 'liver', 'kidney', 'urine', 'vitamin', 'bone', 'infection', 'dengue', 'inflammation', 'joint', 'chest', 'palpitation', 'stomach', 'digestion', 'weight']
+    };
+    var symptomToTestIds = {};
+    MOCK.tests.forEach(function(t) {
+      (t.keywords || '').split(',').forEach(function(kw) {
+        var k = kw.trim().toLowerCase();
+        if (!symptomToTestIds[k]) symptomToTestIds[k] = [];
+        if (symptomToTestIds[k].indexOf(t.id) === -1) symptomToTestIds[k].push(t.id);
+      });
+    });
+    function getStored(k,d){ try { var v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch(e){ return d; } }
+    function setStored(k,v){ try { localStorage.setItem(k,JSON.stringify(v)); } catch(e){} }
+    function nav(cur){ var p=[{h:'index.html',l:'Home'},{h:'doctors.html',l:'Doctors'},{h:'labs.html',l:'Labs'},{h:'pharmacy.html',l:'Pharmacy'},{h:'ambulance.html',l:'Ambulance'},{h:'reports.html',l:'Reports'},{h:'dashboard.html',l:'Dashboard'},{h:'assistant.html',l:'AI Assistant'},{h:'emergency.html',l:'Emergency'}], h='<nav class="nav"><span class="brand">Smart Healthcare</span>'; for(var i=0;i<p.length;i++) h+='<a href="'+p[i].h+'"'+(cur===p[i].h?' style="background:rgba(255,255,255,0.3)"':'')+'>'+p[i].l+'</a>'; var u=getStored('user',null); if(u) h+='<span style="margin-left:auto">'+u.name+'</span>'; else h+='<a href="login.html" style="margin-left:auto">Sign In</a>'; return h+'</nav>'; }
+    var navEl=document.getElementById('nav'); if(navEl)navEl.innerHTML=nav('labs.html');
+
+    function showSuggest() {
+      var si = document.getElementById('symptomInput');
+      var ul = document.getElementById('symptomSuggest');
+      if (!si || !ul) return;
+      var q = (si.value || '').toLowerCase().trim();
+      if (!q) { ul.classList.add('hidden'); ul.innerHTML = ''; return; }
+      var matches = MOCK.symptomKeywords.filter(function(s) { return s.toLowerCase().indexOf(q) !== -1; }).slice(0, 10);
+      if (!matches.length) { ul.classList.add('hidden'); ul.innerHTML = ''; return; }
+      ul.innerHTML = matches.map(function(m) { return '<li data-value="'+m+'">'+m+'</li>'; }).join('');
+      ul.classList.remove('hidden');
+      Array.from(ul.querySelectorAll('li')).forEach(function(li) {
+        li.onclick = function() { var v=li.getAttribute('data-value'); if(v){ var si=document.getElementById('symptomInput'), sb=document.getElementById('suggestBtn'); if(si)si.value=v; ul.classList.add('hidden'); ul.innerHTML=''; if(sb)sb.click(); } };
+      });
+    }
+    var si=document.getElementById('symptomInput'); if(si){ si.oninput=showSuggest; si.onblur=function(){ setTimeout(function(){ var ss=document.getElementById('symptomSuggest'); if(ss)ss.classList.add('hidden'); }, 150); }; }
+
+    function runSuggest() {
+      var si = document.getElementById('symptomInput');
+      var el = document.getElementById('suggestResult');
+      if (!el) return;
+      var s = (si && si.value || '').toLowerCase().trim();
+      if (!s) { el.classList.add('hidden'); return; }
+      var suggested = [];
+      var words = s.split(/\s+/);
+      words.forEach(function(w) {
+        if (symptomToTestIds[w]) {
+          symptomToTestIds[w].forEach(function(tid) {
+            var t = MOCK.tests.filter(function(x) { return x.id === tid; })[0];
+            if (t && suggested.indexOf(t) === -1) suggested.push(t);
+          });
+        }
+      });
+      MOCK.tests.forEach(function(t) {
+        if (t.name.toLowerCase().indexOf(s) !== -1 || (t.keywords && t.keywords.toLowerCase().indexOf(s) !== -1)) {
+          if (suggested.indexOf(t) === -1) suggested.push(t);
+        }
+      });
+      if (!suggested.length) suggested = MOCK.tests.filter(function(t) { return t.category === 'Blood' || t.category === 'Diabetes'; }).slice(0, 4);
+      el.innerHTML = '<p><strong>Suggested tests:</strong></p><div>' + suggested.map(function(t) { return '<span class="test-item">' + t.name + ' – Rs' + t.price + '</span>'; }).join('') + '</div>';
+      el.classList.remove('hidden');
+    }
+    var sb=document.getElementById('suggestBtn'); if(sb)sb.onclick=runSuggest;
+
+    var ll=document.getElementById('labList'), tl=document.getElementById('testList');
+    if(ll)ll.innerHTML=MOCK.labs.map(function(l){ var sn=(l.name||'').replace(/'/g,"\\'"); return '<div class="card"><h2>'+l.name+'</h2><p>'+l.address+(l.homeCollection?' · Home collection':'')+' · ★ '+l.rating+'</p><button type="button" class="btn mt-2" onclick="bookLab(\''+l.id+'\',\''+sn+'\')">Book</button></div>'; }).join('');
+    if(tl)tl.innerHTML=MOCK.tests.map(function(t){ return '<div class="card"><h2>'+t.name+'</h2><p>'+t.category+' · Rs'+t.price+'</p></div>'; }).join('');
+    window.bookLab=function(id,name){ var tests=prompt('Enter test names (comma-separated) or leave blank for CBC'), address=prompt('Address for home collection (or leave blank)'); var b=getStored('bookings',[]); b.push({type:'lab',id:id,name:name,tests:tests||'CBC',address:address||'-'}); setStored('bookings',b); alert('Lab booking saved! View in Dashboard.'); location.href='dashboard.html'; };
+  </script>
+</body>
+</html>

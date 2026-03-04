@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency - Smart Healthcare</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #0f172a; background: #f8fafc; }
+    .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .nav { background: #0091b1; color: white; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .nav a { color: white; text-decoration: none; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .nav .brand { font-weight: 700; margin-right: 1rem; }
+    header.hero { background: linear-gradient(135deg, #0091b1 0%, #00637a 100%); color: white; padding: 2rem 1rem; text-align: center; }
+    .card { background: white; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { color: #0091b1; font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; background: #0091b1; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; border: none; cursor: pointer; font-size: 0.95rem; }
+    .btn-secondary { background: #e2e8f0; color: #0f172a; }
+    .btn-danger { background: #ef4444; }
+    input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+    label { display: block; font-weight: 500; margin-bottom: 0.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .alert-success { background: #d1fae5; color: #065f46; padding: 0.75rem; border-radius: 0.5rem; }
+    .hidden { display: none; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+  <header class="hero"><h1>Emergency</h1><p>SOS · Contacts · Call 108</p></header>
+  <main class="container">
+    <div class="card">
+      <h2>Trigger SOS</h2>
+      <p>Alert your emergency contacts (demo: no real SMS/calls).</p>
+      <button type="button" class="btn btn-danger" id="sosBtn">Trigger SOS</button>
+      <div id="sosResult" class="hidden mt-2"></div>
+    </div>
+    <a href="tel:108" class="card" style="text-decoration:none;color:inherit;display:block">
+      <h2>Call 108</h2>
+      <p>Emergency ambulance helpline.</p>
+      <span class="btn btn-danger">Call 108</span>
+    </a>
+    <div class="card">
+      <h2>Emergency contacts</h2>
+      <div id="contactList"></div>
+      <form id="contactForm" class="mt-2">
+        <div class="form-group"><label>Name</label><input type="text" id="cName" required /></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="cPhone" required /></div>
+        <div class="form-group"><label>Relation</label><input type="text" id="cRelation" placeholder="e.g. Spouse" required /></div>
+        <button type="submit" class="btn">Add contact</button>
+      </form>
+    </div>
+  </main>
+  <script>
+    function getStored(k,d){ try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;} }
+    function setStored(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+    function nav(cur){ var p=[{h:'index.html',l:'Home'},{h:'doctors.html',l:'Doctors'},{h:'labs.html',l:'Labs'},{h:'pharmacy.html',l:'Pharmacy'},{h:'ambulance.html',l:'Ambulance'},{h:'reports.html',l:'Reports'},{h:'dashboard.html',l:'Dashboard'},{h:'assistant.html',l:'AI Assistant'},{h:'emergency.html',l:'Emergency'}], h='<nav class="nav"><span class="brand">Smart Healthcare</span>'; for(var i=0;i<p.length;i++) h+='<a href="'+p[i].h+'"'+(cur===p[i].h?' style="background:rgba(255,255,255,0.3)"':'')+'>'+p[i].l+'</a>'; var u=getStored('user',null); if(u) h+='<span style="margin-left:auto">'+u.name+'</span>'; else h+='<a href="login.html" style="margin-left:auto">Sign In</a>'; return h+'</nav>'; }
+    var navEl=document.getElementById('nav'); if(navEl)navEl.innerHTML=nav('emergency.html');
+    function renderContacts(){ var cl=document.getElementById('contactList'); if(!cl)return; var contacts=getStored('emergencyContacts',[]); cl.innerHTML=contacts.length ? '<ul style="list-style:none">'+contacts.map(function(c,i){ return '<li class="mb-1">'+(c.name||'')+' – '+(c.relation||'')+' · '+(c.phone||'')+' <button type="button" class="btn btn-secondary" style="padding:0.2rem 0.5rem;font-size:0.8rem" onclick="removeContact('+i+')">Remove</button></li>'; }).join('')+'</ul>' : '<p style="color:#64748b">No contacts. Add below.</p>'; }
+    window.removeContact=function(i){ var contacts=getStored('emergencyContacts',[]); contacts.splice(i,1); setStored('emergencyContacts',contacts); renderContacts(); };
+    var cf=document.getElementById('contactForm'), sb=document.getElementById('sosBtn');
+    if(cf)cf.onsubmit=function(e){ e.preventDefault(); var cn=document.getElementById('cName'), cp=document.getElementById('cPhone'), cr=document.getElementById('cRelation'); var contacts=getStored('emergencyContacts',[]); contacts.push({name:cn?cn.value.trim():'',phone:cp?cp.value.trim():'',relation:cr?cr.value.trim():''}); setStored('emergencyContacts',contacts); if(cn)cn.value=''; if(cp)cp.value=''; if(cr)cr.value=''; renderContacts(); alert('Contact added.'); };
+    if(sb)sb.onclick=function(){ var contacts=getStored('emergencyContacts',[]); var sr=document.getElementById('sosResult'); if(sr){ sr.innerHTML='<div class="alert alert-success">SOS triggered (demo). Contacts to notify: '+(contacts.length?contacts.map(function(c){return c.name;}).join(', '):'None')+'.</div>'; sr.classList.remove('hidden'); } };
+    renderContacts();
+  </script>
+</body>
+</html>

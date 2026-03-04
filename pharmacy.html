@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmacy - Smart Healthcare</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #0f172a; background: #f8fafc; }
+    .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .nav { background: #0091b1; color: white; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .nav a { color: white; text-decoration: none; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .nav .brand { font-weight: 700; margin-right: 1rem; }
+    header.hero { background: linear-gradient(135deg, #0091b1 0%, #00637a 100%); color: white; padding: 2rem 1rem; text-align: center; }
+    .card { background: white; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { color: #0091b1; font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; background: #0091b1; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; border: none; cursor: pointer; font-size: 0.95rem; }
+    input, select, textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; margin-bottom: 0.5rem; }
+    label { display: block; font-weight: 500; margin-bottom: 0.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .input-wrap { position: relative; }
+    .autocomplete { position: absolute; left: 0; right: 0; top: 100%; background: #fff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 0.5rem 0.5rem; max-height: 220px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .autocomplete li { padding: 0.5rem 0.75rem; cursor: pointer; list-style: none; font-size: 0.9rem; }
+    .autocomplete li:hover { background: #f0f9ff; color: #0091b1; }
+    .autocomplete li small { color: #64748b; margin-left: 0.5rem; }
+    .add-hint { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+  <header class="hero"><h1>Pharmacy</h1><p>Order medicines · Upload prescription</p></header>
+  <main class="container">
+    <h2 class="mb-1">Pharmacies</h2>
+    <div id="pharmaList"></div>
+    <div class="card mt-2">
+      <h2>Place order</h2>
+      <form id="orderForm">
+        <div class="form-group"><label>Pharmacy</label><select id="pharmaId"></select></div>
+        <div class="form-group input-wrap">
+          <label>Search medicine to add</label>
+          <input type="text" id="medicineSearch" placeholder="Type medicine name e.g. Paracetamol, Crocin" autocomplete="off" />
+          <ul id="medicineSuggest" class="autocomplete hidden"></ul>
+          <p class="add-hint">Select from dropdown to add to your order list below.</p>
+        </div>
+        <div class="form-group">
+          <label>Items (one per line or comma-separated)</label>
+          <textarea id="items" rows="4" placeholder="e.g. Paracetamol 2 strips, Crocin 1 bottle&#10;Or add using search above"></textarea>
+        </div>
+        <div class="form-group"><label>Delivery address</label><input type="text" id="address" placeholder="Full address" required /></div>
+        <button type="submit" class="btn">Place order</button>
+      </form>
+    </div>
+  </main>
+  <script>
+    var MOCK = {
+      pharmacies: [
+        { id: '1', name: 'Apollo Pharmacy', address: 'Sector 18, Noida', phone: '0120-3333333' },
+        { id: '2', name: 'Medplus', address: 'Sector 62, Noida', phone: '0120-4444444' },
+        { id: '3', name: '1mg (formerly Healthkart)', address: 'Sector 50, Noida', phone: '0120-5555555' },
+        { id: '4', name: 'Netmeds', address: 'Sector 18, Noida', phone: '0120-6666666' },
+        { id: '5', name: 'PharmEasy', address: 'Sector 62, Noida', phone: '0120-7777777' },
+        { id: '6', name: 'Guardian Pharmacy', address: 'Sector 51, Noida', phone: '0120-8888888' },
+        { id: '7', name: 'Trust Pharmacy', address: 'Sector 22, Noida', phone: '0120-9999999' }
+      ],
+      medicines: [
+        { name: 'Paracetamol 500mg', use: 'Fever, pain' },
+        { name: 'Crocin Advance', use: 'Fever, headache' },
+        { name: 'Dolo 650', use: 'Fever, body ache' },
+        { name: 'Combiflam', use: 'Pain, inflammation' },
+        { name: 'Voveran', use: 'Pain, swelling' },
+        { name: 'Cyclopam', use: 'Stomach pain, cramps' },
+        { name: 'Digene', use: 'Acidity, indigestion' },
+        { name: 'Gelusil', use: 'Acidity' },
+        { name: 'Omeprazole', use: 'Acidity, GERD' },
+        { name: 'Cetrizine', use: 'Allergy, cold' },
+        { name: 'Avil', use: 'Allergy' },
+        { name: 'Montelukast', use: 'Asthma, allergy' },
+        { name: 'Azithromycin', use: 'Infection, antibiotics' },
+        { name: 'Amoxicillin', use: 'Bacterial infection' },
+        { name: 'Metformin', use: 'Diabetes' },
+        { name: 'Glibenclamide', use: 'Diabetes' },
+        { name: 'Amlodipine', use: 'Blood pressure' },
+        { name: 'Telma', use: 'Blood pressure' },
+        { name: 'Ecosprin 75', use: 'Heart, blood thinner' },
+        { name: 'Atorva', use: 'Cholesterol' },
+        { name: 'Cremaffin', use: 'Constipation' },
+        { name: 'Norflox TZ', use: 'UTI' },
+        { name: 'Brufen', use: 'Pain, fever' },
+        { name: 'Disprin', use: 'Pain, fever' },
+        { name: 'Volini', use: 'Pain relief gel' },
+        { name: 'Moov', use: 'Pain relief' },
+        { name: 'Becosules', use: 'Multivitamin' },
+        { name: 'Shelcal', use: 'Calcium' },
+        { name: 'Zincovit', use: 'Immunity' },
+        { name: 'Liv 52', use: 'Liver support' },
+        { name: 'Himalaya Septilin', use: 'Immunity' },
+        { name: 'Chyawanprash', use: 'Immunity' }
+      ]
+    };
+    function getStored(k,d){ try { var v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch(e){ return d; } }
+    function setStored(k,v){ try { localStorage.setItem(k,JSON.stringify(v)); } catch(e){} }
+    function nav(cur){ var p=[{h:'index.html',l:'Home'},{h:'doctors.html',l:'Doctors'},{h:'labs.html',l:'Labs'},{h:'pharmacy.html',l:'Pharmacy'},{h:'ambulance.html',l:'Ambulance'},{h:'reports.html',l:'Reports'},{h:'dashboard.html',l:'Dashboard'},{h:'assistant.html',l:'AI Assistant'},{h:'emergency.html',l:'Emergency'}], h='<nav class="nav"><span class="brand">Smart Healthcare</span>'; for(var i=0;i<p.length;i++) h+='<a href="'+p[i].h+'"'+(cur===p[i].h?' style="background:rgba(255,255,255,0.3)"':'')+'>'+p[i].l+'</a>'; var u=getStored('user',null); if(u) h+='<span style="margin-left:auto">'+u.name+'</span>'; else h+='<a href="login.html" style="margin-left:auto">Sign In</a>'; return h+'</nav>'; }
+    var navEl=document.getElementById('nav'); if(navEl)navEl.innerHTML=nav('pharmacy.html');
+
+    function showMedicineSuggest() {
+      var ms = document.getElementById('medicineSearch');
+      var ul = document.getElementById('medicineSuggest');
+      if (!ms || !ul) return;
+      var q = (ms.value || '').toLowerCase().trim();
+      if (!q) { ul.classList.add('hidden'); ul.innerHTML = ''; return; }
+      var matches = MOCK.medicines.filter(function(m) {
+        return m.name.toLowerCase().indexOf(q) !== -1 || (m.use && m.use.toLowerCase().indexOf(q) !== -1);
+      }).slice(0, 12);
+      if (!matches.length) { ul.classList.add('hidden'); ul.innerHTML = ''; return; }
+      ul.innerHTML = matches.map(function(m) {
+        return '<li data-name="'+m.name.replace(/"/g,'&quot;')+'"><span>'+m.name+'</span><small>'+m.use+'</small></li>';
+      }).join('');
+      ul.classList.remove('hidden');
+      Array.from(ul.querySelectorAll('li')).forEach(function(li) {
+        li.onclick = function() {
+          var name = li.getAttribute('data-name');
+          if (!name) return;
+          var ta = document.getElementById('items'), ms = document.getElementById('medicineSearch');
+          if (ta) ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + name + ' 1';
+          if (ms) ms.value = '';
+          ul.classList.add('hidden');
+          ul.innerHTML = '';
+        };
+      });
+    }
+    var ms=document.getElementById('medicineSearch'); if(ms){ ms.oninput=showMedicineSuggest; ms.onblur=function(){ setTimeout(function(){ var msu=document.getElementById('medicineSuggest'); if(msu)msu.classList.add('hidden'); }, 180); }; }
+
+    var pid=document.getElementById('pharmaId'), plist=document.getElementById('pharmaList'), of=document.getElementById('orderForm');
+    if(pid)pid.innerHTML=MOCK.pharmacies.map(function(p){ return '<option value="'+p.id+'">'+p.name+'</option>'; }).join('');
+    if(plist)plist.innerHTML=MOCK.pharmacies.map(function(p){ return '<div class="card"><h2>'+p.name+'</h2><p>'+p.address+' · '+p.phone+'</p></div>'; }).join('');
+    if(of)of.onsubmit=function(e){ e.preventDefault(); var pharmaId=(document.getElementById('pharmaId')||{}).value, pharma=MOCK.pharmacies.filter(function(p){ return p.id===pharmaId; })[0], items=(document.getElementById('items')||{}).value||'Prescription upload', address=(document.getElementById('address')||{}).value; if(!address){ alert('Please enter delivery address.'); return; } var orders=getStored('orders',[]); orders.push({pharma:pharma?pharma.name:'Unknown',items:items,address:address,date:new Date().toLocaleDateString()}); setStored('orders',orders); alert('Order placed! View in Dashboard.'); location.href='dashboard.html'; };
+  </script>
+</body>
+</html>

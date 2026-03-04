@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find Doctors - Smart Healthcare</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #0f172a; background: #f8fafc; }
+    .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .nav { background: #0091b1; color: white; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .nav a { color: white; text-decoration: none; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .nav .brand { font-weight: 700; margin-right: 1rem; }
+    header.hero { background: linear-gradient(135deg, #0091b1 0%, #00637a 100%); color: white; padding: 2rem 1rem; text-align: center; }
+    .card { background: white; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { color: #0091b1; font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; background: #0091b1; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; border: none; cursor: pointer; font-size: 0.95rem; }
+    .btn-secondary { background: #e2e8f0; color: #0f172a; }
+    input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-bottom: 0; }
+    .form-group { margin-bottom: 1rem; }
+    .grid { display: grid; gap: 1rem; }
+    @media (min-width: 640px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+    .hidden { display: none; }
+    .star { color: #f59e0b; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .input-wrap { position: relative; }
+    .autocomplete { position: absolute; left: 0; right: 0; top: 100%; background: #fff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 0.5rem 0.5rem; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .autocomplete li { padding: 0.5rem 0.75rem; cursor: pointer; list-style: none; font-size: 0.9rem; }
+    .autocomplete li:hover, .autocomplete li.active { background: #f0f9ff; color: #0091b1; }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+  <header class="hero"><h1>Find Doctors</h1><p>Book appointments · AI symptom matching</p></header>
+  <main class="container">
+    <div class="card">
+      <h2>AI Symptom Matching</h2>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-start">
+        <div class="input-wrap" style="flex:1;min-width:200px">
+          <input type="text" id="symptomInput" placeholder="Type symptom e.g. fever, cough, chest pain" autocomplete="off" />
+          <ul id="symptomSuggest" class="autocomplete hidden"></ul>
+        </div>
+        <button type="button" class="btn" id="matchBtn">Find doctors</button>
+      </div>
+      <div id="matchResult" class="mt-2 hidden" style="background:#f0f9ff;padding:0.75rem 1rem;border-radius:0.5rem;border:1px solid rgba(0,145,177,0.2);"></div>
+    </div>
+    <div class="card">
+      <h2>Filters</h2>
+      <div class="grid grid-3">
+        <div class="form-group input-wrap">
+          <label style="display:block;margin-bottom:0.25rem">Specialization</label>
+          <input type="text" id="filterSpec" placeholder="Type e.g. Physician, Cardio" autocomplete="off" />
+          <ul id="specSuggest" class="autocomplete hidden"></ul>
+        </div>
+        <div class="form-group"><label style="display:block;margin-bottom:0.25rem">Max fee (Rs)</label><input type="number" id="filterFee" placeholder="1000" /></div>
+        <button type="button" class="btn mt-2" id="applyBtn">Apply</button>
+      </div>
+    </div>
+    <h2 class="mb-1">Doctors</h2>
+    <div id="doctorList"></div>
+  </main>
+  <script>
+    var MOCK = {
+      doctors: [
+        { id: '1', name: 'Dr. Rajesh Kumar', spec: 'General Physician', exp: 12, fee: 500, rating: 4.5, reviews: 120, hospital: 'Fortis Healthcare, Noida' },
+        { id: '2', name: 'Dr. Priya Sharma', spec: 'Cardiologist', exp: 8, fee: 800, rating: 4.8, reviews: 24, hospital: 'Apollo Hospital, Noida' },
+        { id: '3', name: 'Dr. Amit Singh', spec: 'Dermatologist', exp: 6, fee: 600, rating: 4.3, reviews: 15, hospital: 'Fortis Healthcare, Noida' },
+        { id: '4', name: 'Dr. Sneha Reddy', spec: 'Pulmonologist', exp: 10, fee: 750, rating: 4.6, reviews: 89, hospital: 'Max Hospital, Noida' },
+        { id: '5', name: 'Dr. Vikram Mehta', spec: 'ENT Specialist', exp: 14, fee: 600, rating: 4.7, reviews: 156, hospital: 'Apollo Hospital, Noida' },
+        { id: '6', name: 'Dr. Anjali Desai', spec: 'Orthopedician', exp: 9, fee: 700, rating: 4.4, reviews: 67, hospital: 'Fortis Healthcare, Noida' },
+        { id: '7', name: 'Dr. Karthik Nair', spec: 'Pediatrician', exp: 7, fee: 550, rating: 4.9, reviews: 203, hospital: 'Rainbow Children Hospital, Noida' },
+        { id: '8', name: 'Dr. Pooja Gupta', spec: 'Gynecologist', exp: 11, fee: 650, rating: 4.5, reviews: 98, hospital: 'Apollo Hospital, Noida' },
+        { id: '9', name: 'Dr. Rohan Verma', spec: 'Neurologist', exp: 13, fee: 900, rating: 4.7, reviews: 45, hospital: 'Max Hospital, Noida' },
+        { id: '10', name: 'Dr. Meera Krishnan', spec: 'Psychiatrist', exp: 8, fee: 800, rating: 4.6, reviews: 72, hospital: 'Fortis Healthcare, Noida' },
+        { id: '11', name: 'Dr. Arjun Kapoor', spec: 'Gastroenterologist', exp: 10, fee: 750, rating: 4.5, reviews: 88, hospital: 'Apollo Hospital, Noida' },
+        { id: '12', name: 'Dr. Divya Menon', spec: 'Ophthalmologist', exp: 6, fee: 500, rating: 4.8, reviews: 134, hospital: 'Dr. Agarwal Eye Hospital, Noida' },
+        { id: '13', name: 'Dr. Suresh Patel', spec: 'General Physician', exp: 18, fee: 600, rating: 4.9, reviews: 312, hospital: 'Max Hospital, Noida' },
+        { id: '14', name: 'Dr. Neha Joshi', spec: 'Dermatologist', exp: 5, fee: 550, rating: 4.4, reviews: 56, hospital: 'Apollo Hospital, Noida' }
+      ],
+      symptomSpec: {
+        fever: 'General Physician', cough: 'Pulmonologist', cold: 'General Physician', flu: 'General Physician',
+        chest: 'Cardiologist', heart: 'Cardiologist', blood pressure: 'Cardiologist', palpitation: 'Cardiologist',
+        skin: 'Dermatologist', rash: 'Dermatologist', acne: 'Dermatologist', itching: 'Dermatologist', hair fall: 'Dermatologist',
+        breathing: 'Pulmonologist', asthma: 'Pulmonologist', wheezing: 'Pulmonologist',
+        ear: 'ENT Specialist', nose: 'ENT Specialist', throat: 'ENT Specialist', sinus: 'ENT Specialist', hearing: 'ENT Specialist',
+        joint: 'Orthopedician', bone: 'Orthopedician', knee: 'Orthopedician', back pain: 'Orthopedician', fracture: 'Orthopedician',
+        child: 'Pediatrician', baby: 'Pediatrician', pediatric: 'Pediatrician', vaccination: 'Pediatrician',
+        pregnancy: 'Gynecologist', menstrual: 'Gynecologist', pcos: 'Gynecologist', gynec: 'Gynecologist',
+        headache: 'Neurologist', migraine: 'Neurologist', dizziness: 'Neurologist', nerve: 'Neurologist', seizure: 'Neurologist',
+        anxiety: 'Psychiatrist', depression: 'Psychiatrist', stress: 'Psychiatrist', mental health: 'Psychiatrist', sleep: 'Psychiatrist',
+        stomach: 'Gastroenterologist', digestion: 'Gastroenterologist', acidity: 'Gastroenterologist', liver: 'Gastroenterologist',
+        eye: 'Ophthalmologist', vision: 'Ophthalmologist', cataract: 'Ophthalmologist', glaucoma: 'Ophthalmologist'
+      },
+      specializations: ['General Physician', 'Cardiologist', 'Dermatologist', 'Pulmonologist', 'ENT Specialist', 'Orthopedician', 'Pediatrician', 'Gynecologist', 'Neurologist', 'Psychiatrist', 'Gastroenterologist', 'Ophthalmologist']
+    };
+    var symptomsList = Object.keys(MOCK.symptomSpec);
+    function getStored(k,d){ try { var v=localStorage.getItem(k); return v?JSON.parse(v):d; } catch(e){ return d; } }
+    function setStored(k,v){ try { localStorage.setItem(k,JSON.stringify(v)); } catch(e){} }
+    function nav(cur){ var p=[{h:'index.html',l:'Home'},{h:'doctors.html',l:'Doctors'},{h:'labs.html',l:'Labs'},{h:'pharmacy.html',l:'Pharmacy'},{h:'ambulance.html',l:'Ambulance'},{h:'reports.html',l:'Reports'},{h:'dashboard.html',l:'Dashboard'},{h:'assistant.html',l:'AI Assistant'},{h:'emergency.html',l:'Emergency'}], h='<nav class="nav"><span class="brand">Smart Healthcare</span>'; for(var i=0;i<p.length;i++) h+='<a href="'+p[i].h+'"'+(cur===p[i].h?' style="background:rgba(255,255,255,0.3)"':'')+'>'+p[i].l+'</a>'; var u=getStored('user',null); if(u) h+='<span style="margin-left:auto">'+u.name+'</span>'; else h+='<a href="login.html" style="margin-left:auto">Sign In</a>'; return h+'</nav>'; }
+    var navEl=document.getElementById('nav'); if(navEl)navEl.innerHTML=nav('doctors.html');
+
+    function showSuggest(inputId, listId, source, maxItems) {
+      var inp = document.getElementById(inputId);
+      var ul = document.getElementById(listId);
+      if (!inp || !ul) return;
+      var q = (inp.value || '').toLowerCase().trim();
+      if (!q) { ul.classList.add('hidden'); ul.innerHTML = ''; return; }
+      var matches = (source || []).filter(function(s) { return String(s).toLowerCase().indexOf(q) !== -1; }).slice(0, maxItems || 10);
+      if (!matches.length) { ul.classList.add('hidden'); ul.innerHTML = ''; return; }
+      ul.innerHTML = matches.map(function(m) { return '<li data-value="'+m.replace(/"/g,'&quot;')+'">'+m+'</li>'; }).join('');
+      ul.classList.remove('hidden');
+      Array.from(ul.querySelectorAll('li')).forEach(function(li) {
+        li.onclick = function() { var val = li.getAttribute('data-value'); if (val) { document.getElementById(inputId).value = val; ul.classList.add('hidden'); ul.innerHTML = ''; if (inputId === 'symptomInput') { var mb = document.getElementById('matchBtn'); if (mb) mb.click(); } else { renderDoctors(); } } };
+      });
+    }
+    function hideSuggest(listId) { setTimeout(function() { var el=document.getElementById(listId); if(el) el.classList.add('hidden'); }, 150); }
+    var si=document.getElementById('symptomInput'),fs=document.getElementById('filterSpec');
+    if(si){ si.oninput=function(){ showSuggest('symptomInput','symptomSuggest',symptomsList); }; si.onblur=function(){ hideSuggest('symptomSuggest'); }; }
+    if(fs){ fs.oninput=function(){ showSuggest('filterSpec','specSuggest',MOCK.specializations); }; fs.onblur=function(){ hideSuggest('specSuggest'); }; }
+
+    function renderDoctors(){ var fs=document.getElementById('filterSpec'), ff=document.getElementById('filterFee'); var spec=((fs&&fs.value)||'').toLowerCase(), fee=parseInt(ff&&ff.value,10); if(isNaN(fee))fee=99999; var list=MOCK.doctors.filter(function(d){ return (!spec||d.spec.toLowerCase().indexOf(spec)!==-1)&&d.fee<=fee; }); var dl=document.getElementById('doctorList'); if(!dl)return; var html=list.map(function(d){ var safeName=(d.name||'').replace(/'/g,"\\'"); return '<div class="card"><h2>'+d.name+'</h2><p>'+d.spec+' · '+d.exp+' yrs · <span class="star">★</span> '+d.rating+' ('+d.reviews+')</p><p style="color:#64748b;font-size:0.9rem">'+d.hospital+'</p><p class="mt-2"><strong>Rs '+d.fee+'</strong> <button type="button" class="btn btn-secondary" onclick="bookDoctor(\''+d.id+'\',\''+safeName+'\','+d.fee+')">Book</button></p></div>'; }).join(''); dl.innerHTML=html||'<p>No doctors match.</p>'; }
+    window.bookDoctor=function(id,name,fee){ var slot=prompt('Enter date/time (e.g. Tomorrow 10 AM)'); if(slot){ var b=getStored('bookings',[]); b.push({type:'doctor',id:id,name:name,fee:fee,slot:slot}); setStored('bookings',b); alert('Booking saved! View in Dashboard.'); location.href='dashboard.html'; } };
+    var mb=document.getElementById('matchBtn'); if(mb)mb.onclick=function(){ var si=document.getElementById('symptomInput'), r=document.getElementById('matchResult'), fs=document.getElementById('filterSpec'); var s=(si&&si.value||'').toLowerCase().trim(); if(!r)return; if(!s){ r.classList.add('hidden'); return; } var spec='General Physician'; var keys=Object.keys(MOCK.symptomSpec).sort(function(a,b){ return b.length-a.length; }); for(var i=0;i<keys.length;i++){ var k=keys[i]; if(s.indexOf(k)!==-1){ spec=MOCK.symptomSpec[k]; break; } } var words=s.split(/\s+/); if(spec==='General Physician'){ for(var j=0;j<words.length;j++){ for(var i=0;i<keys.length;i++){ if(words[j].indexOf(keys[i])!==-1||keys[i].indexOf(words[j])!==-1){ spec=MOCK.symptomSpec[keys[i]]; break; } } if(spec!=='General Physician')break; } } var docs=MOCK.doctors.filter(function(d){ return (d.spec||'').trim()===(spec||'').trim(); }); if(fs)fs.value=spec; renderDoctors(); r.innerHTML='<p><strong>Suggested specialization: '+spec+'</strong></p><p>'+(docs.length?docs.map(function(d){ return d.name+' – Rs'+d.fee; }).join(', '):'No doctor in this specialty. Browse all below.')+'</p>'; r.classList.remove('hidden'); };
+    var ab=document.getElementById('applyBtn'); if(ab)ab.onclick=renderDoctors;
+    renderDoctors();
+  </script>
+</body>
+</html>

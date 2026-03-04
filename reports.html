@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports - Smart Healthcare</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #0f172a; background: #f8fafc; }
+    .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .nav { background: #0091b1; color: white; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .nav a { color: white; text-decoration: none; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .nav .brand { font-weight: 700; margin-right: 1rem; }
+    header.hero { background: linear-gradient(135deg, #0091b1 0%, #00637a 100%); color: white; padding: 2rem 1rem; text-align: center; }
+    .card { background: white; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { color: #0091b1; font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; background: #0091b1; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; border: none; cursor: pointer; font-size: 0.95rem; }
+    .btn-secondary { background: #e2e8f0; color: #0f172a; }
+    input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+    label { display: block; font-weight: 500; margin-bottom: 0.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .hidden { display: none; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+  <header class="hero"><h1>Reports</h1><p>Upload · AI explanation (EN/Hindi) · Risk alerts</p></header>
+  <main class="container">
+    <div class="card">
+      <h2>Upload report</h2>
+      <form id="uploadForm">
+        <div class="form-group"><label>Report title</label><input type="text" id="reportTitle" placeholder="e.g. CBC Jan 2025" required /></div>
+        <div class="form-group"><label>File (demo: paste link or leave blank)</label><input type="text" id="reportFile" placeholder="https://... or leave blank" /></div>
+        <button type="submit" class="btn">Upload</button>
+      </form>
+    </div>
+    <h2 class="mb-1">My reports</h2>
+    <div id="reportList"></div>
+    <div id="explainBox" class="card hidden mt-2">
+      <h2>AI explanation</h2>
+      <p><button type="button" class="btn btn-secondary" id="langEn">English</button> <button type="button" class="btn btn-secondary" id="langHi">Hindi</button></p>
+      <p id="explainText" class="mt-2"></p>
+      <p id="riskAlerts" class="mt-2 hidden" style="background:#fef3c7;padding:0.5rem;border-radius:0.5rem"></p>
+    </div>
+  </main>
+  <script>
+    var MOCK={};
+    function getStored(k,d){ try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;} }
+    function setStored(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+    function nav(cur){ var p=[{h:'index.html',l:'Home'},{h:'doctors.html',l:'Doctors'},{h:'labs.html',l:'Labs'},{h:'pharmacy.html',l:'Pharmacy'},{h:'ambulance.html',l:'Ambulance'},{h:'reports.html',l:'Reports'},{h:'dashboard.html',l:'Dashboard'},{h:'assistant.html',l:'AI Assistant'},{h:'emergency.html',l:'Emergency'}], h='<nav class="nav"><span class="brand">Smart Healthcare</span>'; for(var i=0;i<p.length;i++) h+='<a href="'+p[i].h+'"'+(cur===p[i].h?' style="background:rgba(255,255,255,0.3)"':'')+'>'+p[i].l+'</a>'; var u=getStored('user',null); if(u) h+='<span style="margin-left:auto">'+u.name+'</span>'; else h+='<a href="login.html" style="margin-left:auto">Sign In</a>'; return h+'</nav>'; }
+    var navEl=document.getElementById('nav'); if(navEl)navEl.innerHTML=nav('reports.html');
+    var _explainLang='en', _lastExplainIndex=-1;
+    function renderReports(){ var rl=document.getElementById('reportList'); if(!rl)return; var reports=getStored('reports',[]); if(!reports.length){ rl.innerHTML='<p style="color:#64748b">No reports yet. Upload above.</p>'; return; } rl.innerHTML=reports.map(function(r,i){ var t=String(r.title||'Report').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); return '<div class="card"><h2>'+t+'</h2><p>'+(r.date||'')+'</p><button type="button" class="btn btn-secondary mt-2" onclick="explainReport('+i+')">AI explain</button></div>'; }).join(''); }
+    window.explainReport=function(i){ _lastExplainIndex=i; var reports=getStored('reports',[]), r=reports[i]; if(!r) return; var box=document.getElementById('explainBox'), textEl=document.getElementById('explainText'), alertsEl=document.getElementById('riskAlerts'); if(!box)return; box.classList.remove('hidden'); if(textEl){ if(_explainLang==='hi') textEl.textContent='Yeh report samanya blood test (CBC) se sambandhit hai. Result doctor se share karein. Koi gambhir asaamanyata nahi dikhi.'; else textEl.textContent='This report relates to a routine blood test (CBC). Share results with your doctor. No critical abnormalities noted.'; } if(alertsEl){ if(_explainLang==='hi') alertsEl.textContent='Chetavani: Agar lakshan bane rahein to doctor se milen.'; else alertsEl.textContent='Risk alerts: If symptoms persist, consult a doctor.'; alertsEl.classList.remove('hidden'); } };
+    var le=document.getElementById('langEn'), lh=document.getElementById('langHi'), uf=document.getElementById('uploadForm');
+    if(le)le.onclick=function(){ _explainLang='en'; if(_lastExplainIndex>=0) explainReport(_lastExplainIndex); };
+    if(lh)lh.onclick=function(){ _explainLang='hi'; if(_lastExplainIndex>=0) explainReport(_lastExplainIndex); };
+    if(uf)uf.onsubmit=function(e){ e.preventDefault(); var rt=document.getElementById('reportTitle'), rf=document.getElementById('reportFile'); var title=rt?rt.value.trim():'', file=rf?rf.value.trim():''; var reports=getStored('reports',[]); reports.unshift({title:title||'Untitled',file:file||'No file (demo)',date:new Date().toLocaleDateString()}); setStored('reports',reports); if(rt)rt.value=''; if(rf)rf.value=''; renderReports(); alert('Report uploaded!'); };
+    renderReports();
+  </script>
+</body>
+</html>

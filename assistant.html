@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Assistant - Smart Healthcare</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #0f172a; background: #f8fafc; }
+    .container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    .nav { background: #0091b1; color: white; padding: 0.75rem 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .nav a { color: white; text-decoration: none; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .nav .brand { font-weight: 700; margin-right: 1rem; }
+    header.hero { background: linear-gradient(135deg, #0091b1 0%, #00637a 100%); color: white; padding: 2rem 1rem; text-align: center; }
+    .card { background: white; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { color: #0091b1; font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .btn { display: inline-block; background: #0091b1; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; border: none; cursor: pointer; font-size: 0.95rem; }
+    input { padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 1rem; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div id="nav"></div>
+  <header class="hero"><h1>AI Health Assistant</h1><p>Symptom · Diet · Mental health (powered by AI when server is running)</p></header>
+  <main class="container">
+    <div class="card" style="max-height:70vh;display:flex;flex-direction:column">
+      <h2>Chat</h2>
+      <p id="apiStatus" class="mb-1" style="font-size:0.85rem;color:#64748b"></p>
+      <div id="chat" style="flex:1;overflow-y:auto;min-height:280px;margin-bottom:1rem"></div>
+      <form id="chatForm" style="display:flex;gap:0.5rem">
+        <input type="text" id="msg" placeholder="Type your message..." style="flex:1;margin:0" />
+        <button type="submit" class="btn" id="sendBtn">Send</button>
+      </form>
+    </div>
+    <div class="mt-2" style="font-size:0.85rem;color:#64748b;background:#f1f5f9;padding:1rem;border-radius:0.5rem">
+      <strong>Get real AI replies</strong><br/>
+      1. Open a terminal in the project folder and run: <code style="background:#e2e8f0;padding:0.2rem 0.4rem;border-radius:4px">cd server && npm run dev</code><br/>
+      2. In <code>server/.env</code> add: <code style="background:#e2e8f0;padding:0.2rem 0.4rem;border-radius:4px">GROQ_API_KEY=gsk_your_key</code><br/>
+      3. Get a free API key at <a href="https://console.groq.com" target="_blank" rel="noopener">console.groq.com</a> → API Keys → Create. Then refresh this page and chat again.
+    </div>
+  </main>
+  <script>
+    function getStored(k,d){ try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;} }
+    function nav(cur){ var p=[{h:'index.html',l:'Home'},{h:'doctors.html',l:'Doctors'},{h:'labs.html',l:'Labs'},{h:'pharmacy.html',l:'Pharmacy'},{h:'ambulance.html',l:'Ambulance'},{h:'reports.html',l:'Reports'},{h:'dashboard.html',l:'Dashboard'},{h:'assistant.html',l:'AI Assistant'},{h:'emergency.html',l:'Emergency'}], h='<nav class="nav"><span class="brand">Smart Healthcare</span>'; for(var i=0;i<p.length;i++) h+='<a href="'+p[i].h+'"'+(cur===p[i].h?' style="background:rgba(255,255,255,0.3)"':'')+'>'+p[i].l+'</a>'; var u=getStored('user',null); if(u) h+='<span style="margin-left:auto">'+u.name+'</span>'; else h+='<a href="login.html" style="margin-left:auto">Sign In</a>'; return h+'</nav>'; }
+    function mockAI(q){ var t=(q||'').toLowerCase(); if(t.indexOf('fever')!==-1||t.indexOf('temperature')!==-1) return 'Rest, fluids, and paracetamol can help. If fever is high or lasts more than 3 days, see a doctor.'; if(t.indexOf('headache')!==-1) return 'Rest in a quiet room and stay hydrated. Over-the-counter pain relief may help. If severe or sudden, seek medical help.'; if(t.indexOf('diet')!==-1||t.indexOf('food')!==-1) return 'A balanced diet with vegetables, fruits, and enough protein supports health. Limit processed foods and sugar.'; if(t.indexOf('stress')!==-1||t.indexOf('anxiety')!==-1) return 'Breathing exercises and short walks can help. If you feel overwhelmed, consider talking to a counselor.'; return 'I\'m your health assistant. You can ask about symptoms, diet, or mental wellness. For serious or ongoing issues, please consult a doctor. For real-time AI answers, start the backend server and add a Groq API key (see steps below).'; }
+    var navEl=document.getElementById('nav'); if(navEl)navEl.innerHTML=nav('assistant.html');
+    var CHAT_API=window.CHAT_API||'http://localhost:5000/api', chat=document.getElementById('chat'), sendBtn=document.getElementById('sendBtn'), apiStatus=document.getElementById('apiStatus');
+    function addMsg(role,text){ if(!chat)return; var div=document.createElement('div'); div.className='mb-1'; div.style.cssText=role==='user'?'text-align:right;color:#0091b1':'text-align:left;background:#f1f5f9;padding:0.5rem;border-radius:0.5rem'; div.textContent=text; chat.appendChild(div); chat.scrollTop=chat.scrollHeight; }
+    function setStatus(usingAI){ if(apiStatus) apiStatus.textContent=usingAI?'Using AI (Groq)':'Using demo replies. Start the server and add GROQ_API_KEY for real AI (see below).'; }
+    function checkServer(){ if(!apiStatus)return; var base=CHAT_API.replace(/\/api$/,''); fetch(base+'/health').then(function(r){ if(r.ok) return r.json(); if(r.status===403) return {}; throw new Error('Not OK'); }).then(function(){ apiStatus.textContent='Server connected. Send a message — if GROQ_API_KEY is set, you\'ll get real AI replies.'; }).catch(function(){ apiStatus.textContent='Server not running. Using demo replies. To get real AI: (1) In terminal run: cd server && npm run dev  (2) Add GROQ_API_KEY in server/.env — get a free key at console.groq.com'; }); }
+    checkServer();
+    var chatForm=document.getElementById('chatForm'); if(chatForm) chatForm.onsubmit=function(e){ e.preventDefault(); var input=document.getElementById('msg'); var text=input?input.value.trim():''; if(!text) return; if(input) input.value=''; addMsg('user',text); if(sendBtn) sendBtn.disabled=true; fetch(CHAT_API+'/chat/public',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text})}).then(function(res){ return res.json(); }).then(function(data){ if(data.success&&data.reply){ addMsg('assistant',data.reply); setStatus(true); } else { addMsg('assistant',mockAI(text)); setStatus(false); } }).catch(function(){ addMsg('assistant',mockAI(text)); setStatus(false); }).finally(function(){ if(sendBtn) sendBtn.disabled=false; }); };
+  </script>
+</body>
+</html>
